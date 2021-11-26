@@ -92,6 +92,7 @@ jobs:
     - name: Building
       run: |
         PATH=~/bin:$PATH
+        source ${GITHUB_WORKSPACE}/${{ github.event.inputs.DEVICE_NAME }}.sh
         cd ${{ steps.pwd.outputs.pwd }}
         export ALLOW_MISSING_DEPENDENCIES=true
         source build/envsetup.sh
