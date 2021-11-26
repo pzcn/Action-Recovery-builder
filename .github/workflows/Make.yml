@@ -104,6 +104,6 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         path: |
-          fox_11.0/out/target/product/${{ github.event.inputs.DEVICE_PATH }}/*.img
-          fox_11.0/out/target/product/${{ github.event.inputs.DEVICE_PATH }}/*.zip
+          workspace/out/target/product/${{ github.event.inputs.DEVICE_PATH }}/*.img
+          workspace/out/target/product/${{ github.event.inputs.DEVICE_PATH }}/*.zip
         name: ${{ github.event.inputs.DEVICE_NAME }}
