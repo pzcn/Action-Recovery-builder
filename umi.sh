@@ -1,4 +1,4 @@
-source source SHRP_DEVICE_CODE=umi
+source SHRP_DEVICE_CODE=umi
 source SHRP_PATH=device/xiaomi/$(source SHRP_DEVICE_CODE)
 source SHRP_MAINTAINER=PedroZ
 source SHRP_REC_TYPE=MIUI
