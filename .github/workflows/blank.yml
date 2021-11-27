@@ -1,0 +1,110 @@
+name: Make Recovery without config
+
+on:
+  workflow_dispatch:
+    inputs:
+      LIBRARY_NAME:
+        description: 'LIBRARY_NAME'
+        required: true
+        default: 'twrp'
+      LIBRARY_URL:
+        description: 'LIBRARY_URL'
+        required: true
+        default: 'git://github.com/SHRP/manifest.git'
+      LIBRARY_BRANCH:
+        description: 'LIBRARY_BRANCH'
+        required: true
+        default: 'v3_11.0'
+      DEVICE_URL:
+        description: 'DEVICE_URL'
+        required: true
+        default: 'https://github.com/pzcn/android_device_xiaomi_umi_TWRP.git'
+      DEVICE_BRANCH:
+        description: 'DEVICE_BRANCH'
+        required: true
+        default: 'android-12'
+      DEVICE_PATH:
+        description: 'DEVICE_PATH'
+        required: true
+        default: 'umi'
+      DEVICE_NAME:
+        description: 'DEVICE_NAME'
+        required: true
+        default: 'umi'
+
+jobs:
+  build:
+    if: github.event.repository.owner.id == github.event.sender.id
+    runs-on: ubuntu-18.04
+    
+    steps:
+    - name: Remove useless package
+      run: |
+        docker rmi `docker images -q`
+        sudo rm -rf /usr/share/dotnet /etc/mysql /etc/php /etc/sudo apt/sources.list.d
+        sudo apt -y purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* mysql* php*
+        sudo apt -y autoremove --purge
+        sudo apt -y autoclean
+        sudo apt clean
+        
+    - name: Maximize and mount build space
+      uses: easimon/maximize-build-space@master
+      with:
+        root-reserve-mb: 1024
+        swap-size-mb: 6144
+        remove-dotnet: 'true'
+        temp-reserve-mb: 1024
+        remove-android: 'true'
+        remove-haskell: 'true'
+
+    - name: Check Out
+      uses: actions/checkout@main
+    - name: Set variables
+      run: |
+        echo "::set-output name=date::$(date +%F)"
+      id: var
+      
+    - name: Prepare environment
+      run: |
+        export HOME=${GITHUB_WORKSPACE}
+        cd ${GITHUB_WORKSPACE}
+        sudo apt -y install git aria2 
+        git clone https://gitlab.com/OrangeFox/misc/scripts
+        cd scripts
+        sudo bash setup/android_build_env.sh
+        sudo bash setup/install_android_sdk.sh || true
+      
+    - name: Initialize repo
+      run: |
+        mkdir ${GITHUB_WORKSPACE}/workspace
+        cd ${GITHUB_WORKSPACE}/workspace
+        git config --global user.name "Hikaru's Action-Build-Bot"
+        git config --global user.email "Android@teio.tk"
+        repo init --depth=1 -u ${{ github.event.inputs.LIBRARY_URL }} -b ${{ github.event.inputs.LIBRARY_BRANCH }}
+          
+    - name: Repo Sync
+      run: |
+        cd ${GITHUB_WORKSPACE}/workspace
+        repo sync -j$(nproc --all) -f --force-sync
+        ls -al
+      
+    - name: Clone device
+      run: |
+        cd ${GITHUB_WORKSPACE}/workspace
+        git clone ${{ github.event.inputs.DEVICE_URL }} -b ${{ github.event.inputs.DEVICE_BRANCH }} device/xiaomi/${{ github.event.inputs.DEVICE_PATH }}
+    - name: Building
+      run: |
+        cd ${GITHUB_WORKSPACE}/workspace
+        export ALLOW_MISSING_DEPENDENCIES=true
+        source build/envsetup.sh
+        lunch ${{ github.event.inputs.LIBRARY_NAME }}_${{ github.event.inputs.DEVICE_NAME }}-eng 
+        make clean
+        make recoveryimage -j$(nproc --all)        
+      
+    - name: Upload articact
+      uses: actions/upload-artifact@v2
+      with:
+        path: |
+          workspace/out/target/product/${{ github.event.inputs.DEVICE_PATH }}/*.img
+          workspace/out/target/product/${{ github.event.inputs.DEVICE_PATH }}/*.zip
+        name: ${{ github.event.inputs.DEVICE_NAME }}
