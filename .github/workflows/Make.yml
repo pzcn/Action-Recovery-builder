@@ -38,10 +38,7 @@ jobs:
     runs-on: ubuntu-18.04
     
     steps:
-    - name: Check Out
-      uses: actions/checkout@main
-      
-    - name: Prepare the environment
+    - name: Remove useless package
       run: |
         docker rmi `docker images -q`
         sudo rm -rf /usr/share/dotnet /etc/mysql /etc/php /etc/sudo apt/sources.list.d
@@ -49,10 +46,19 @@ jobs:
         sudo apt -y autoremove --purge
         sudo apt -y autoclean
         sudo apt clean
-        sudo apt update
-        sudo apt -y upgrade
-        sudo apt -y install git-core gnupg flex bison gperf build-essential zip curl zlib1g-dev gcc-multilib g++-multilib libc6-dev-i386 lib32ncurses5-dev x11proto-core-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc unzip jq bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libssl-dev libwxgtk3.0-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev imagemagick libbz2-dev libssl-dev lzma ncftp bash-completion python openjdk-8-jdk qemu-user-static
-      
+        
+    - name: Maximize and mount build space
+      uses: easimon/maximize-build-space@master
+      with:
+        root-reserve-mb: 1024
+        swap-size-mb: 6144
+        remove-dotnet: 'true'
+        temp-reserve-mb: 1024
+        remove-android: 'true'
+        remove-haskell: 'true'
+
+    - name: Check Out
+      uses: actions/checkout@main
     - name: Set variables
       run: |
         echo "::set-output name=date::$(date +%F)"
@@ -67,33 +73,27 @@ jobs:
       
     - name: Initialize repo
       run: |
-        PATH=~/bin:$PATH
-        mkdir workspace
-        cd workspace
-        echo "::set-output name=pwd::$(pwd)"
+        mkdir ${GITHUB_WORKSPACE}/workspace
+        cd ${GITHUB_WORKSPACE}/workspace
         git config --global user.name "Hikaru's Action-Build-Bot"
         git config --global user.email "Android@teio.tk"
         repo init --depth=1 -u ${{ github.event.inputs.LIBRARY_URL }} -b ${{ github.event.inputs.LIBRARY_BRANCH }}
-      id: pwd
           
     - name: Repo Sync
       run: |
-        PATH=~/bin:$PATH
-        cd workspace
+        cd ${GITHUB_WORKSPACE}/workspace
         repo sync -j$(nproc --all) -f --force-sync
         ls -al
       
     - name: Clone device
       run: |
-        PATH=~/bin:$PATH
-        cd ${{ steps.pwd.outputs.pwd }}
+        cd ${GITHUB_WORKSPACE}/workspace
         git clone ${{ github.event.inputs.DEVICE_URL }} -b ${{ github.event.inputs.DEVICE_BRANCH }} device/xiaomi/${{ github.event.inputs.DEVICE_PATH }}
 
     - name: Building
       run: |
-        PATH=~/bin:$PATH
         source ${GITHUB_WORKSPACE}/${{ github.event.inputs.DEVICE_NAME }}.sh
-        cd ${{ steps.pwd.outputs.pwd }}
+        cd ${GITHUB_WORKSPACE}/workspace
         export ALLOW_MISSING_DEPENDENCIES=true
         source build/envsetup.sh
         lunch ${{ github.event.inputs.LIBRARY_NAME }}_${{ github.event.inputs.DEVICE_NAME }}-eng 
