@@ -64,12 +64,15 @@ jobs:
         echo "::set-output name=date::$(date +%F)"
       id: var
       
-    - name: Install repo
+    - name: Prepare environment
       run: |
-        mkdir ~/bin
-        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
-        chmod a+x ~/bin/repo
-        export PATH=~/bin:$PATH
+        export HOME=${GITHUB_WORKSPACE}
+        cd ${GITHUB_WORKSPACE}
+        sudo apt -y install git aria2 
+        git clone https://gitlab.com/OrangeFox/misc/scripts
+        cd scripts
+        sudo bash setup/android_build_env.sh
+        sudo bash setup/install_android_sdk.sh || true
       
     - name: Initialize repo
       run: |
