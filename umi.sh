@@ -26,6 +26,6 @@ export SHRP_SKIP_DEFAULT_ADDON_4=true
 export INC_IN_REC_MAGISK=true
 export SHRP_NO_SAR_AUTOMOUNT=true
 export TW_DEFAULT_LANGUAGE=zh_CN
-sed -i "s/TW_H_OFFSET/#TW_H_OFFSET/g" device/xiaomi/umi/BoardConfig.mk
-sed -i "s/TW_Y_OFFSET/#TW_Y_OFFSET/g" device/xiaomi/umi/BoardConfig.mk
+sed -i "s/TW_H_OFFSET/#TW_H_OFFSET/g" workspace/device/xiaomi/umi/BoardConfig.mk
+sed -i "s/TW_Y_OFFSET/#TW_Y_OFFSET/g" workspace/device/xiaomi/umi/BoardConfig.mk
 rm -rf device/xiaomi/umi/recovery/root/customzip
